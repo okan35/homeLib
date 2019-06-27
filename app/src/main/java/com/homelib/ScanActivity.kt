@@ -1,15 +1,28 @@
 package com.homelib
 
+import android.app.Activity
 import android.content.Intent
+import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-
+import android.support.v7.widget.LinearLayoutManager
+import android.util.Log
 import android.widget.Toast
+import com.google.gson.*
 import com.google.zxing.Result
+import com.homelib.db.DbHandler
+import com.homelib.models.BookModel
+import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
 import me.dm7.barcodescanner.zxing.ZXingScannerView
-
-
-
+import okhttp3.*
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.IOException
+import java.lang.Exception
+import java.net.URL
+import com.homelib.MainActivity as MainActivity1
 
 
 class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler {
@@ -38,69 +51,51 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler {
     }
 
     override fun handleResult(p0: Result?) {
-        Toast.makeText(this@ScanActivity,p0?.text,Toast.LENGTH_SHORT).show()
-        onBackPressed()
+        Toast.makeText(this@ScanActivity, p0?.text, Toast.LENGTH_SHORT).show()
+        fetchJson(p0!!.text)
+        //onBackPressed()
     }
 
-    /*fun fetchJson(bookIsbn: String) {
-        var url = "https://www.googleapis.com/books/v1/volumes?q=isbn:" + bookIsbn
-
-        val request = Request.Builder().url(url).build()
-
-        val client = OkHttpClient()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call?, e: IOException?) {
-                println("Error in executing call")
-            }
-
-            override fun onResponse(call: Call?, response: Response?) {
-
+    fun fetchJson(isbn: String) {
+            AsyncTask.execute(Runnable {
                 try {
-                    val body = response?.body()?.string()
-                    val jsonObject = JSONObject(body)
-                    if (jsonObject.getString("totalItems").equals("0")) {
-                        val intent = Intent(this@ScanActivity, MainActivity::class.java)
-                        intent.putExtra("title", "Book was not found")
-                        startActivity(intent)
-                        return
-                    }
-
-                    val items = jsonObject.getJSONArray("items").getJSONObject(0)
-
-
-                    val id = items.getString("id")
-                    val volumeInfo = items.getJSONObject("volumeInfo")
+                    val apiResponse = URL("https://www.googleapis.com/books/v1/volumes?q=isbn:" + isbn).readText()
+                    val jsonObject = JSONObject(apiResponse)
+                    val items:JSONObject = jsonObject.getJSONArray("items").getJSONObject(0)
+                    val volumeInfo : JSONObject = items.getJSONObject("volumeInfo")
                     val title = volumeInfo.getString("title")
                     val author = volumeInfo.getJSONArray("authors").get(0).toString()
-                    val publishedDate = volumeInfo.getString("publishedDate")
+                    val year = volumeInfo.getString("publishedDate")
                     val bookCover = volumeInfo.getJSONObject("imageLinks").getString("smallThumbnail")
-
-                    val book = Book(id, author, title, publishedDate, bookCover)
-
-                    //println("id " + book.id + " title " + book.title + "bookcover " + bookCover)
-
-                    val bookDB = BookDB(this@ScanActivity)
-                    val result : Long = bookDB.insertBook(book)
-                    print("result " + result)
-                    val intent = Intent(this@ScanActivity, MainActivity::class.java)
-                    intent.putExtra("id", book.id)
-                    startActivity(intent)
+                    val book = BookModel(title,author,year,bookCover)
+                    val dbHandler = DbHandler(this@ScanActivity)
+                    val status = dbHandler.addBook(book)
+                    //Log.d("cdcd "," title" + title  + " author " + author + " year " + year + "bookcover " + bookCover)
+                    runOnUiThread {
+                        if (status > -1) {
+                            Toast.makeText(applicationContext, "record save", Toast.LENGTH_LONG).show()
+                        }
+                    }
                 } catch (e:Exception) {
-                    e.printStackTrace()
+                    runOnUiThread {
+
+                        Toast.makeText(applicationContext, "Json parsing error ", Toast.LENGTH_LONG).show()
+
+                    }
                 }
 
+            })
 
 
-            }
-        })
+        onBackPressed()
 
-    }*/
+
+
+    }
+
+
+
+
+
 }
-
-class HomeFeed(val Book1: List<Book1>)
-
-class Book1(val title: String, val author: String, val isbn: Long, val year: String, val publisher: String)
-
-
 

@@ -7,28 +7,76 @@ import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.LinearLayoutManager
+import android.util.Log
 import android.widget.Toast
+import com.homelib.db.DbHandler
+import com.homelib.models.BookModel
 import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity() {
 
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         validatePermission()
+        fillList()
+
+/*
+        books_recycler_view.layoutManager = LinearLayoutManager(this)
 
 
+        //rv_parts.adapter = PartAdapter(testData)
+        var mutableList = arrayListOf<BookModel>()
+        val adapter = BooksAdapter(mutableList)
+
+        adapter.clearData()
+        mutableList = createTestData()
+
+        books_recycler_view.adapter = BooksAdapter(mutableList)
+
+
+        // Create the PartAdapter
+        // 1st parameter: our generated testData
+        // 2nd parameter: item click handler function (implemented below) as function parameter
+
+        books_recycler_view.adapter?.notifyDataSetChanged()*/
         button_scan.setOnClickListener {
             performAction()
         }
     }
 
+    fun fillList(){
+        val mutableList: ArrayList<BookModel> = createTestData()
+        books_recycler_view.layoutManager = LinearLayoutManager(this)
+        books_recycler_view.adapter = BooksAdapter(mutableList)
+    }
+
+
+
+
+
     private fun performAction() {
         val intent = Intent(this, ScanActivity::class.java)
         startActivity(intent)
 
+    }
+
+    private fun createTestData() : ArrayList<BookModel> {
+        val dbHandler = DbHandler(this@MainActivity)
+        val bookList: List<BookModel>  =  dbHandler.viewBooks()
+        val partList = ArrayList<BookModel>()
+        for (book in  bookList){
+            partList.add(BookModel(book.title, book.author,book.year,book.image))
+        }
+
+
+
+
+        return partList
     }
 
     override fun onRequestPermissionsResult(requestCode: Int,
