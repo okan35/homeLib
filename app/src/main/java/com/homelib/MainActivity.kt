@@ -8,7 +8,6 @@ import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
-import android.util.Log
 import android.widget.Toast
 import com.homelib.db.DbHandler
 import com.homelib.models.BookModel
@@ -34,7 +33,7 @@ class MainActivity : AppCompatActivity() {
         val adapter = BooksAdapter(mutableList)
 
         adapter.clearData()
-        mutableList = createTestData()
+        mutableList = getBookData()
 
         books_recycler_view.adapter = BooksAdapter(mutableList)
 
@@ -50,7 +49,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun fillList(){
-        val mutableList: ArrayList<BookModel> = createTestData()
+        val mutableList: ArrayList<BookModel> = getBookData()
+        println("lıst " + mutableList.size)
         books_recycler_view.layoutManager = LinearLayoutManager(this)
         books_recycler_view.adapter = BooksAdapter(mutableList)
     }
@@ -65,7 +65,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    private fun createTestData() : ArrayList<BookModel> {
+    private fun getBookData() : ArrayList<BookModel> {
         val dbHandler = DbHandler(this@MainActivity)
         val bookList: List<BookModel>  =  dbHandler.viewBooks()
         val partList = ArrayList<BookModel>()

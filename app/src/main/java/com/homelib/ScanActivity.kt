@@ -7,6 +7,10 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.util.Log
+import android.view.View
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import android.widget.Toast
 import com.google.gson.*
 import com.google.zxing.Result
@@ -36,7 +40,28 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler {
     public override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         mScannerView = ZXingScannerView(this)   // Programmatically initialize the scanner view
-        setContentView(mScannerView)                // Set the scanner view as the content view
+        //setContentView(mScannerView)                // Set the scanner view as the content view
+        val parent = RelativeLayout(this)
+        parent.layoutParams = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT)
+
+
+        val button = Button(this)
+        button.text="FLASH"
+
+
+        val params = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,RelativeLayout.LayoutParams.WRAP_CONTENT)
+        params.addRule(RelativeLayout.BELOW,button.id)
+        mScannerView!!.layoutParams=params
+        parent.addView(mScannerView)
+
+        parent.addView(button)
+        setContentView(parent)
+
+        button.setOnClickListener {
+            mScannerView!!.flash = !mScannerView!!.flash
+        }
+
     }
 
     public override fun onResume() {
