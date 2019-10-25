@@ -8,6 +8,7 @@ import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
+import android.util.Log
 import android.widget.Toast
 import com.homelib.db.DbHandler
 import com.homelib.models.BookModel
@@ -17,67 +18,45 @@ import kotlinx.android.synthetic.main.activity_main.*
 class MainActivity : AppCompatActivity() {
 
 
-
+    val mutableList = mutableListOf<BookModel>()
+    val dbHandler = DbHandler(this@MainActivity)
+    private lateinit var bookAdapter: BooksAdapter
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         validatePermission()
-        fillList()
-
-/*
-        books_recycler_view.layoutManager = LinearLayoutManager(this)
-
-
-        //rv_parts.adapter = PartAdapter(testData)
-        var mutableList = arrayListOf<BookModel>()
-        val adapter = BooksAdapter(mutableList)
-
-        adapter.clearData()
-        mutableList = getBookData()
-
-        books_recycler_view.adapter = BooksAdapter(mutableList)
-
-
-        // Create the PartAdapter
-        // 1st parameter: our generated testData
-        // 2nd parameter: item click handler function (implemented below) as function parameter
-
-        books_recycler_view.adapter?.notifyDataSetChanged()*/
+        initRecyclerView()
+        addData()
         button_scan.setOnClickListener {
             performAction()
         }
+
+        Log.v("ON CREATE","ON CREATE CALLED")
     }
-
-    fun fillList(){
-        val mutableList: ArrayList<BookModel> = getBookData()
-        println("lıst " + mutableList.size)
-        books_recycler_view.layoutManager = LinearLayoutManager(this)
-        books_recycler_view.adapter = BooksAdapter(mutableList)
-    }
-
-
-
-
 
     private fun performAction() {
         val intent = Intent(this, ScanActivity::class.java)
         startActivity(intent)
-
+        finish()
     }
 
-    private fun getBookData() : ArrayList<BookModel> {
-        val dbHandler = DbHandler(this@MainActivity)
-        val bookList: List<BookModel>  =  dbHandler.viewBooks()
-        val partList = ArrayList<BookModel>()
-        for (book in  bookList){
-            partList.add(BookModel(book.title, book.author,book.year,book.image))
+    private fun addData(){
+        /*for (book in  dbHandler.viewBooks()){
+            mutableList.add(BookModel(book.title, book.author,book.year,book.imageLink,book.isbn))
+        }*/
+        Log.v("LIST ", dbHandler.viewBooks().toString())
+        bookAdapter.updateData(dbHandler.viewBooks())
+    }
+
+    private fun initRecyclerView(){
+        books_recycler_view.apply {
+            books_recycler_view.layoutManager = LinearLayoutManager(this@MainActivity)
+            bookAdapter = BooksAdapter(mutableList)
+            books_recycler_view.adapter=bookAdapter
         }
-
-
-
-
-        return partList
     }
+
+
 
     override fun onRequestPermissionsResult(requestCode: Int,
                                             permissions: Array<String>, grantResults: IntArray) {

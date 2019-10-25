@@ -1,13 +1,15 @@
 package com.homelib
 
 import android.support.v7.widget.RecyclerView
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.homelib.models.BookModel
+import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.book_row.view.*
 
-class BooksAdapter (val bookList: ArrayList<BookModel>) :
+class BooksAdapter(var bookList: MutableList<BookModel>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -26,10 +28,21 @@ class BooksAdapter (val bookList: ArrayList<BookModel>) :
         fun bind(part: BookModel) {
             itemView.title.text = part.title
             itemView.year.text = part.year
-            //itemView.bookCover.text = part.author
+            Picasso.get().isLoggingEnabled=true
+            println("link " + part.imageLink)
+            if (!part.imageLink.equals("")){
+                Picasso.get().load(part.imageLink).into(itemView.bookCover)
+            }
+
             itemView.author.text = part.author
 
         }
+    }
+
+    fun submitList(list: MutableList<BookModel>){
+        bookList.clear()
+        bookList=list
+        notifyDataSetChanged()
     }
 
     fun clearData(){

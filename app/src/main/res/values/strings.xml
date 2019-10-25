@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">homeLib</string>
     <string name="scan_book">scan book</string>
+	<string name = "flash">FLASH</string>
 </resources>
