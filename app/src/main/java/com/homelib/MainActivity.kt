@@ -3,16 +3,34 @@ package com.homelib
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
 import com.homelib.db.DbHandler
 import com.homelib.models.BookModel
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
+import java.lang.Exception
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
+import android.support.v4.app.SupportActivity
+import android.support.v4.app.SupportActivity.ExtraData
+import android.support.v4.content.ContextCompat.getSystemService
+import android.icu.lang.UCharacter.GraphemeClusterBreak.T
+import com.google.gson.JsonObject
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.BufferedWriter
 
 
 class MainActivity : AppCompatActivity() {
@@ -24,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        setSupportActionBar(findViewById(R.id.toolbar))
         validatePermission()
         initRecyclerView()
         addData()
@@ -32,6 +51,76 @@ class MainActivity : AppCompatActivity() {
         }
 
         Log.v("ON CREATE","ON CREATE CALLED")
+    }
+    override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
+        R.id.sync -> {
+            // User chose the "Print" item
+            AsyncTask.execute {
+                try {
+                    sendPostRequest()
+                    //getRequest()
+                }catch (e:Exception){
+                    e.printStackTrace()
+                }
+
+            }
+            Toast.makeText(this,"Sync action",Toast.LENGTH_LONG).show()
+            true
+        }
+        android.R.id.home ->{
+            Toast.makeText(this,"Home action",Toast.LENGTH_LONG).show()
+            true
+        }
+
+        else -> {
+            // If we got here, the user's action was not recognized.
+            // Invoke the superclass to handle it.
+            super.onOptionsItemSelected(item)
+        }
+    }
+
+    fun sendPostRequest() {
+
+        val mURL = URL("http://192.168.64.104:8080/savebooks")
+
+        with(mURL.openConnection() as HttpURLConnection) {
+            // optional default is GET
+            requestMethod = "POST"
+
+
+            val wr = BufferedWriter(OutputStreamWriter(getOutputStream()))
+            wr.write(dbHandler.getRows().toString())
+            wr.flush()
+            wr.close()
+
+            println("URL : $url")
+            println("Response Code : $responseCode")
+
+            BufferedReader(InputStreamReader(inputStream)).use {
+                val response = StringBuffer()
+
+                var inputLine = it.readLine()
+                while (inputLine != null) {
+                    response.append(inputLine)
+                    inputLine = it.readLine()
+                }
+                it.close()
+                println("Response : $response")
+            }
+        }
+    }
+
+    fun getRequest(){
+        val jsonStr = URL("http://192.168.64.104:8080/").readText()
+
+        //val jsonStr = URL("http://0.0.0.0.xip.io:8080/").readText()
+        Log.d("OKAN ", jsonStr)
+
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.main_menu,menu)
+        return super.onCreateOptionsMenu(menu)
     }
 
     private fun performAction() {

@@ -89,10 +89,15 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler {
                         runOnUiThread {
                             if (status > -1) {
                                 Toast.makeText(applicationContext, "record save", Toast.LENGTH_LONG).show()
-                                onBackPressed()//IF THIS IS NOT CALLED HERE THE ON CREATE ON MAIN ACTIVITYSOMEHOW DOES NOT FILL LIST.
                             }
                         }
+                    } else {
+                        runOnUiThread{
+                            Toast.makeText(applicationContext, "Book was not found", Toast.LENGTH_LONG).show()
+
+                        }
                     }
+                    onBackPressed()//IF THIS IS NOT CALLED HERE THE ON CREATE ON MAIN ACTIVITYSOMEHOW DOES NOT FILL LIST.
                 } catch (e: Exception) {
                     e.printStackTrace()
                     runOnUiThread {
@@ -117,7 +122,9 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler {
             author = volumeInfo.getJSONArray("authors").get(0).toString()
             publishedDate = volumeInfo.getString("publishedDate")
             thumbnail = volumeInfo.getJSONObject("imageLinks").getString("smallThumbnail")
-
+            runOnUiThread {
+                Toast.makeText(applicationContext,"Source: google books",Toast.LENGTH_SHORT).show()
+            }
             return true
         } else {
             apiResponse =
@@ -131,7 +138,11 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler {
 
                 publishedDate = detailsObject.getString("publish_date")
                 author = detailsObject.getJSONArray("authors").getJSONObject(0).getString("name")
+                runOnUiThread {
+                    Toast.makeText(applicationContext,"Source: open library",Toast.LENGTH_SHORT).show()
+                }
                 return true
+
             }
         }
         return false
