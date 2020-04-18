@@ -18,12 +18,21 @@ import kotlinx.android.synthetic.main.activity_main.*
 class MainActivity : AppCompatActivity() {
 
 
-
+    val mutableList = mutableListOf<BookModel>()
+    val dbHandler = DbHandler(this@MainActivity)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         validatePermission()
-        fillList()
+        for (book in  dbHandler.viewBooks()){
+            Log.d("BOOK " ,"title"+book.title+" author " + book.author + " year " + book.year + " image " + book.image + " isbn " + book.isbn)
+            mutableList.add(BookModel(book.title, book.author,book.year,book.image,book.isbn))
+        }
+        Log.d("MAIN ACTIVITY " ,  dbHandler.viewBooks().size.toString())
+
+        books_recycler_view.layoutManager = LinearLayoutManager(this)
+        books_recycler_view.adapter = BooksAdapter(mutableList)
+        //fillList()
 
 /*
         books_recycler_view.layoutManager = LinearLayoutManager(this)
@@ -49,35 +58,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun fillList(){
-        val mutableList: ArrayList<BookModel> = createTestData()
-        books_recycler_view.layoutManager = LinearLayoutManager(this)
-        books_recycler_view.adapter = BooksAdapter(mutableList)
-    }
-
-
-
-
-
     private fun performAction() {
         val intent = Intent(this, ScanActivity::class.java)
         startActivity(intent)
 
     }
 
-    private fun createTestData() : ArrayList<BookModel> {
-        val dbHandler = DbHandler(this@MainActivity)
-        val bookList: List<BookModel>  =  dbHandler.viewBooks()
-        val partList = ArrayList<BookModel>()
-        for (book in  bookList){
-            partList.add(BookModel(book.title, book.author,book.year,book.image))
-        }
 
-
-
-
-        return partList
-    }
 
     override fun onRequestPermissionsResult(requestCode: Int,
                                             permissions: Array<String>, grantResults: IntArray) {
