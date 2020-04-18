@@ -6,11 +6,10 @@ import android.database.sqlite.SQLiteOpenHelper
 import android.content.ContentValues
 import android.database.Cursor
 import android.database.sqlite.SQLiteException
-import android.util.Log
 import com.homelib.models.BookModel
 import android.database.DatabaseUtils
-
-
+import org.json.JSONArray
+import org.json.JSONObject
 
 
 class DbHandler(context: Context): SQLiteOpenHelper(context,DATABASE_NAME,null,DATABASE_VERSION) {
@@ -48,7 +47,7 @@ class DbHandler(context: Context): SQLiteOpenHelper(context,DATABASE_NAME,null,D
 
         contentValues.put(COL_AUTHOR, book.author)
         contentValues.put(COL_TITLE, book.title)
-        contentValues.put(COL_IMAGE_LINK, book.image)
+        contentValues.put(COL_IMAGE_LINK, book.imageLink)
         contentValues.put(COL_YEAR, book.year)
         contentValues.put(COL_ISBN, book.isbn)
 
@@ -84,7 +83,7 @@ class DbHandler(context: Context): SQLiteOpenHelper(context,DATABASE_NAME,null,D
                 bookYear = cursor.getString(cursor.getColumnIndex(COL_YEAR))
                 bookImageLink = cursor.getString(cursor.getColumnIndex(COL_IMAGE_LINK))
                 bookIsbn= cursor.getString(cursor.getColumnIndex(COL_ISBN))
-                val emp= BookModel(title = bookTitle, author = bookAuthor, year= bookYear,image = bookImageLink, isbn = bookIsbn)
+                val emp= BookModel(title = bookTitle, author = bookAuthor, year= bookYear,imageLink = bookImageLink, isbn = bookIsbn)
                 empList.add(emp)
             } while (cursor.moveToNext())
         }
@@ -95,6 +94,42 @@ class DbHandler(context: Context): SQLiteOpenHelper(context,DATABASE_NAME,null,D
 
     fun getBookByISBN(isbn: Long):Boolean {
         return DatabaseUtils.queryNumEntries(this.readableDatabase, TABLE_BOOKS, "$COL_ISBN = ?", arrayOf("$isbn")) > 0
+    }
+
+    fun getRows():JSONArray{
+        val empList= JSONArray()
+        val selectQuery = "SELECT  * FROM $TABLE_BOOKS"
+        val db = this.readableDatabase
+        val cursor = db.rawQuery(selectQuery, null)
+
+
+        var bookAuthor: String
+        var bookTitle: String
+        var bookYear: String
+        var bookImageLink : String
+        var bookIsbn : String
+        if (cursor.moveToFirst()) {
+            do {
+
+                bookAuthor = cursor.getString(cursor.getColumnIndex(COL_AUTHOR))
+                bookTitle = cursor.getString(cursor.getColumnIndex(COL_TITLE))
+                bookYear = cursor.getString(cursor.getColumnIndex(COL_YEAR))
+                bookImageLink = cursor.getString(cursor.getColumnIndex(COL_IMAGE_LINK))
+                bookIsbn= cursor.getString(cursor.getColumnIndex(COL_ISBN))
+                //val emp= BookModel(title = bookTitle, author = bookAuthor, year= bookYear,imageLink = bookImageLink, isbn = bookIsbn)
+                val jsonBook=JSONObject()
+                jsonBook.put(COL_TITLE,bookTitle)
+                jsonBook.put(COL_AUTHOR,bookAuthor)
+                jsonBook.put(COL_YEAR,bookYear)
+                jsonBook.put(COL_IMAGE_LINK,bookImageLink)
+                jsonBook.put(COL_ISBN,bookIsbn)
+
+                empList.put(jsonBook)
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        db.close()
+        return empList
     }
 
 

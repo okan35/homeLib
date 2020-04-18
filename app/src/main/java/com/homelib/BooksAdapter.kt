@@ -19,16 +19,6 @@ class BooksAdapter(var bookList: MutableList<BookModel>) :
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val thumbnailImageView = holder.itemView.bookCover
-/*
-        holder.itemView.year.text = bookList[position].year
-        holder.itemView.title.text = bookList[position].title
-        holder.itemView.author.text = bookList[position].author
-        Log.d("RECYCLER ", bookList[position].image)
-*/
-        //Picasso.get().load(bookList[position].image).into(thumbnailImageView)
-        //Picasso.get().load(bookList[position].image).into(thumbnailImageView)
-
         (holder as BookViewHolder).bind(bookList[position])
     }
 
@@ -38,12 +28,21 @@ class BooksAdapter(var bookList: MutableList<BookModel>) :
         fun bind(part: BookModel) {
             itemView.title.text = part.title
             itemView.year.text = part.year
-            //itemView.bookCover.text = part.author
-            Log.d("cdsdcd " , part.image)
-            //Picasso.get().load(part.image).into(itemView.bookCover)
+            Picasso.get().isLoggingEnabled=true
+            println("link " + part.imageLink)
+            if (!part.imageLink.equals("")){
+                Picasso.get().load(part.imageLink).into(itemView.bookCover)
+            }
+
             itemView.author.text = part.author
 
         }
+    }
+
+    fun submitList(list: MutableList<BookModel>){
+        bookList.clear()
+        bookList=list
+        notifyDataSetChanged()
     }
 
     fun clearData(){
