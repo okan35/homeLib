@@ -13,8 +13,12 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import com.homelib.adapters.BookListAdapter
 import com.homelib.db.DbHandler
 import com.homelib.viewmodels.BookModel
+import com.homelib.viewmodels.BookViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.BufferedReader
 import java.io.BufferedWriter
@@ -30,13 +34,24 @@ class MainActivity : AppCompatActivity() {
     val mutableList = mutableListOf<BookModel>()
     val dbHandler = DbHandler(this@MainActivity)
     private lateinit var bookAdapter: BooksAdapter
+    lateinit var bookViewModel: BookViewModel
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(findViewById(R.id.toolbar))
+
+        val adapter = BookListAdapter(this)
+
+        books_recycler_view.adapter = adapter
+        books_recycler_view.layoutManager = LinearLayoutManager(this)
+        bookViewModel = ViewModelProvider(this).get(BookViewModel::class.java)
+
+        bookViewModel.allUsers.observe(this, Observer { books ->
+            books?.let {adapter.setWords(it)}
+        })
         validatePermission()
-        initRecyclerView()
-        addData()
+        //initRecyclerView()
+        //addData()
         button_scan.setOnClickListener {
             performAction()
         }

@@ -91,47 +91,47 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
     fun fetchJson(isbn: String) {
         //val isExistingBook = dbHandler.getBookByISBN(isbn.toLong())
         launch {
-            if (!bookViewModel.isBookExisting(isbn.toLong())) {
-                AsyncTask.execute {
-                    try {
-                        if (parseJson(isbn)){
-                            //book = BookModel(title = title, author = author, year = publishedDate, imageLink = thumbnail, isbn = isbn)
-                            book2 = Book(title = title, author = author, year = publishedDate, imageLink = thumbnail, isbn = isbn)
+            try {
+                if (!bookViewModel.isBookExisting(isbn.toLong())) {
+                    AsyncTask.execute {
+                        try {
+                            if (parseJson(isbn)){
+                                //book = BookModel(title = title, author = author, year = publishedDate, imageLink = thumbnail, isbn = isbn)
+                                book2 = Book(title = title, author = author, year = publishedDate, imageLink = thumbnail, isbn = isbn)
 
-                            //val status = dbHandler.addBook(book)
+                                //val status = dbHandler.addBook(book)
 
-                            bookViewModel.insert(book2)
-                            val status2 = bookViewModel.isBookSaved
-                            runOnUiThread {
-                                if (status2 > -1) {
-                                    Toast.makeText(applicationContext, "record save", Toast.LENGTH_LONG).show()
+                                bookViewModel.insert(book2)
+                                val status2 = bookViewModel.isBookSaved
+                                runOnUiThread {
+                                    if (status2 > -1) {
+                                        Toast.makeText(applicationContext, "record save", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            } else {
+                                runOnUiThread{
+                                    Toast.makeText(applicationContext, "Book was not found", Toast.LENGTH_LONG).show()
+
                                 }
                             }
-                        } else {
-                            runOnUiThread{
-                                Toast.makeText(applicationContext, "Book was not found", Toast.LENGTH_LONG).show()
-
+                            onBackPressed()//IF THIS IS NOT CALLED HERE THE ON CREATE ON MAIN ACTIVITYSOMEHOW DOES NOT FILL LIST.
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            runOnUiThread {
+                                Toast.makeText(applicationContext, "Json parsing error ", Toast.LENGTH_LONG).show()
+                                onBackPressed()
                             }
                         }
-                        onBackPressed()//IF THIS IS NOT CALLED HERE THE ON CREATE ON MAIN ACTIVITYSOMEHOW DOES NOT FILL LIST.
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        runOnUiThread {
-                            Toast.makeText(applicationContext, "Json parsing error ", Toast.LENGTH_LONG).show()
-                            onBackPressed()
-                        }
                     }
+                } else {
+                    Toast.makeText(this@ScanActivity, "Book already saved", Toast.LENGTH_SHORT).show()
+                    onBackPressed()
                 }
-            } else {
-                Toast.makeText(this@ScanActivity, "Book already saved", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception){
+                Toast.makeText(this@ScanActivity, e.message, Toast.LENGTH_SHORT).show()
                 onBackPressed()
             }
         }
-
-
-
-
-
     }
 
     fun parseJson(isbn: String): Boolean{
