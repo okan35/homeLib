@@ -1,4 +1,4 @@
-package com.homelib.models
+package com.homelib.viewmodels
 
 
 

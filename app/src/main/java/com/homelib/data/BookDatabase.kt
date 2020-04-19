@@ -9,7 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 
-@Database(entities = [Book::class], version = 1)
+@Database(entities = [Book::class], version = 1, exportSchema = false)
 abstract class BookDatabase : RoomDatabase() {
     abstract fun bookDao(): BookDao
 
@@ -21,9 +21,9 @@ abstract class BookDatabase : RoomDatabase() {
             super.onOpen(db)
             INSTANCE?.let { database ->
                 scope.launch {
-                    val wordDao = database.bookDao()
+                    //val wordDao = database.bookDao()
                     // Delete all content here.
-                    wordDao.deleteAll()
+                    //wordDao.deleteAll()
                 }
             }
         }
@@ -39,7 +39,7 @@ abstract class BookDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     BookDatabase::class.java,
-                    "word_database"
+                    "books"
                 )
                     .addCallback(
                         UserDatabaseCallback(

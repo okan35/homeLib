@@ -6,7 +6,7 @@ import android.database.sqlite.SQLiteOpenHelper
 import android.content.ContentValues
 import android.database.Cursor
 import android.database.sqlite.SQLiteException
-import com.homelib.models.BookModel
+import com.homelib.viewmodels.BookModel
 import android.database.DatabaseUtils
 import org.json.JSONArray
 import org.json.JSONObject

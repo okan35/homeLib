@@ -3,23 +3,31 @@ package com.homelib
 import android.content.Intent
 import android.os.AsyncTask
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
-import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.Toast
+import androidx.lifecycle.ViewModelProvider
 import com.google.zxing.Result
+import com.homelib.data.Book
+import com.homelib.data.BookDao
 import com.homelib.db.DbHandler
-import com.homelib.models.BookModel
+import com.homelib.viewmodels.BookModel
+import com.homelib.viewmodels.BookViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import me.dm7.barcodescanner.zxing.ZXingScannerView
 import org.json.JSONObject
 import java.net.URL
+import kotlin.coroutines.CoroutineContext
 
 
-class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler {
+class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, CoroutineScope {
 
-
+    private var job: Job = Job()
     private var mScannerView: ZXingScannerView? = null
     var barcode: Long = 0
     var title = ""
@@ -27,6 +35,8 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler {
     var publishedDate = ""
     var thumbnail = ""
     lateinit var book: BookModel
+    lateinit var book2: Book
+    lateinit var bookViewModel: BookViewModel
     lateinit var dbHandler : DbHandler
     //var books = ArrayList<Book>()
     //  var booksMutable = mutableListOf<Book>()
@@ -52,6 +62,9 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler {
 
         parent.addView(button)
         setContentView(parent)
+
+        bookViewModel = ViewModelProvider(this).get(BookViewModel::class.java)
+
         dbHandler = DbHandler(this@ScanActivity)
         button.setOnClickListener {
             mScannerView!!.flash = !mScannerView!!.flash
@@ -76,40 +89,49 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler {
     }
 
     fun fetchJson(isbn: String) {
+        //val isExistingBook = dbHandler.getBookByISBN(isbn.toLong())
+        launch {
+            if (!bookViewModel.isBookExisting(isbn.toLong())) {
+                AsyncTask.execute {
+                    try {
+                        if (parseJson(isbn)){
+                            //book = BookModel(title = title, author = author, year = publishedDate, imageLink = thumbnail, isbn = isbn)
+                            book2 = Book(title = title, author = author, year = publishedDate, imageLink = thumbnail, isbn = isbn)
 
-        val isExistingBook = dbHandler.getBookByISBN(isbn.toLong())
+                            //val status = dbHandler.addBook(book)
 
-        if (!isExistingBook) {
-            AsyncTask.execute {
-                try {
-                    if (parseJson(isbn)){
-                        book = BookModel(title = title, author = author, year = publishedDate, imageLink = thumbnail, isbn = isbn)
+                            bookViewModel.insert(book2)
+                            val status2 = bookViewModel.isBookSaved
+                            runOnUiThread {
+                                if (status2 > -1) {
+                                    Toast.makeText(applicationContext, "record save", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        } else {
+                            runOnUiThread{
+                                Toast.makeText(applicationContext, "Book was not found", Toast.LENGTH_LONG).show()
 
-                        val status = dbHandler.addBook(book)
-                        runOnUiThread {
-                            if (status > -1) {
-                                Toast.makeText(applicationContext, "record save", Toast.LENGTH_LONG).show()
                             }
                         }
-                    } else {
-                        runOnUiThread{
-                            Toast.makeText(applicationContext, "Book was not found", Toast.LENGTH_LONG).show()
-
+                        onBackPressed()//IF THIS IS NOT CALLED HERE THE ON CREATE ON MAIN ACTIVITYSOMEHOW DOES NOT FILL LIST.
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        runOnUiThread {
+                            Toast.makeText(applicationContext, "Json parsing error ", Toast.LENGTH_LONG).show()
+                            onBackPressed()
                         }
                     }
-                    onBackPressed()//IF THIS IS NOT CALLED HERE THE ON CREATE ON MAIN ACTIVITYSOMEHOW DOES NOT FILL LIST.
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    runOnUiThread {
-                        Toast.makeText(applicationContext, "Json parsing error ", Toast.LENGTH_LONG).show()
-                        onBackPressed()
-                    }
                 }
+            } else {
+                Toast.makeText(this@ScanActivity, "Book already saved", Toast.LENGTH_SHORT).show()
+                onBackPressed()
             }
-        } else {
-            Toast.makeText(this@ScanActivity, "Book already saved", Toast.LENGTH_SHORT).show()
-            onBackPressed()
         }
+
+
+
+
+
     }
 
     fun parseJson(isbn: String): Boolean{
@@ -153,5 +175,8 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler {
         startActivity(intent)
         finish()
     }
+
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main + job
 }
 

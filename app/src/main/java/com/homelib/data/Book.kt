@@ -6,12 +6,13 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "books")
 data class Book(
-    @ColumnInfo(name = "title") val title: String?,
-    @ColumnInfo(name = "author") val author: String?,
-    @ColumnInfo(name = "year") val year: String?,
-    @ColumnInfo(name = "image_link") val imageLink: String?,
-    @ColumnInfo(name = "isbn") val isbn: String?
+    @ColumnInfo(name = "title") var title: String?,
+    @ColumnInfo(name = "author") var author: String?,
+    @ColumnInfo(name = "year") var year: String?,
+    @ColumnInfo(name = "image_link") var imageLink: String?,
+    @ColumnInfo(name = "isbn") var isbn: String?
 ) {
     @PrimaryKey(autoGenerate = true)
-    val book_id: Int = 0
+    @ColumnInfo(name = "book_id")
+    var bookId: Int = 0
 }

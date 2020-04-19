@@ -14,6 +14,12 @@ interface BookDao {
     @Query("SELECT * FROM books WHERE author LIKE :author AND " + "title LIKE :title LIMIT 1")
     fun findByName(author: String, title: String): Book
 
+    @Query("SELECT * FROM books WHERE isbn = :isbn ")
+    fun getBookByIsbn(isbn: Long) : Book
+
+    @Query("SELECT EXISTS(SELECT 1 FROM books WHERE isbn = :isbn LIMIT 1)")
+    suspend fun isBookExisting(isbn: Long) : Boolean
+
     @Insert
     fun insertAll(vararg users: Book)
 
@@ -24,7 +30,7 @@ interface BookDao {
     fun getAlphabetizedBooks(): LiveData<List<Book>>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE) //if there is an existing records this prevents  duplication from happening
-    suspend fun insert(book: Book)
+    suspend fun insert(book: Book) : Long
 
     @Query("DELETE FROM BOOKS")
     suspend fun deleteAll()

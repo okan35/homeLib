@@ -1,11 +1,10 @@
 package com.homelib
 
-import android.support.v7.widget.RecyclerView
-import android.util.Log
+import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.homelib.models.BookModel
+import com.homelib.viewmodels.BookModel
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.book_row.view.*
 
