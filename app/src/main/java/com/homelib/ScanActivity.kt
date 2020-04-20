@@ -11,9 +11,6 @@ import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 import com.google.zxing.Result
 import com.homelib.data.Book
-import com.homelib.data.BookDao
-import com.homelib.db.DbHandler
-import com.homelib.viewmodels.BookModel
 import com.homelib.viewmodels.BookViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,12 +31,8 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
     var author = ""
     var publishedDate = ""
     var thumbnail = ""
-    lateinit var book: BookModel
-    lateinit var book2: Book
-    lateinit var bookViewModel: BookViewModel
-    lateinit var dbHandler : DbHandler
-    //var books = ArrayList<Book>()
-    //  var booksMutable = mutableListOf<Book>()
+    private lateinit var book2: Book
+    private lateinit var bookViewModel: BookViewModel
 
     public override fun onCreate(state: Bundle?) {
         super.onCreate(state)
@@ -65,7 +58,7 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
 
         bookViewModel = ViewModelProvider(this).get(BookViewModel::class.java)
 
-        dbHandler = DbHandler(this@ScanActivity)
+
         button.setOnClickListener {
             mScannerView!!.flash = !mScannerView!!.flash
         }             // Set the scanner view as the content view
@@ -85,22 +78,16 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
     override fun handleResult(p0: Result?) {
         Toast.makeText(this@ScanActivity, p0?.text, Toast.LENGTH_SHORT).show()
         fetchJson(p0!!.text)
-        //onBackPressed()
     }
 
     fun fetchJson(isbn: String) {
-        //val isExistingBook = dbHandler.getBookByISBN(isbn.toLong())
         launch {
             try {
                 if (!bookViewModel.isBookExisting(isbn.toLong())) {
                     AsyncTask.execute {
                         try {
                             if (parseJson(isbn)){
-                                //book = BookModel(title = title, author = author, year = publishedDate, imageLink = thumbnail, isbn = isbn)
                                 book2 = Book(title = title, author = author, year = publishedDate, imageLink = thumbnail, isbn = isbn)
-
-                                //val status = dbHandler.addBook(book)
-
                                 bookViewModel.insert(book2)
                                 val status2 = bookViewModel.isBookSaved
                                 runOnUiThread {

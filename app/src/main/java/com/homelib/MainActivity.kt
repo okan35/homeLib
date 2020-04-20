@@ -5,19 +5,17 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.AsyncTask
 import android.os.Bundle
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.homelib.adapters.BookListAdapter
-import com.homelib.db.DbHandler
-import com.homelib.viewmodels.BookModel
 import com.homelib.viewmodels.BookViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.BufferedReader
@@ -29,11 +27,6 @@ import java.net.URL
 
 
 class MainActivity : AppCompatActivity() {
-
-
-    val mutableList = mutableListOf<BookModel>()
-    val dbHandler = DbHandler(this@MainActivity)
-    private lateinit var bookAdapter: BooksAdapter
     lateinit var bookViewModel: BookViewModel
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,16 +40,13 @@ class MainActivity : AppCompatActivity() {
         bookViewModel = ViewModelProvider(this).get(BookViewModel::class.java)
 
         bookViewModel.allUsers.observe(this, Observer { books ->
-            books?.let {adapter.setWords(it)}
+            books?.let { adapter.setWords(it) }
         })
         validatePermission()
-        //initRecyclerView()
-        //addData()
+
         button_scan.setOnClickListener {
             performAction()
         }
-
-        Log.v("ON CREATE", "ON CREATE CALLED")
     }
 
     override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
@@ -96,7 +86,7 @@ class MainActivity : AppCompatActivity() {
 
 
             val wr = BufferedWriter(OutputStreamWriter(outputStream))
-            wr.write(dbHandler.getRows().toString())
+            //wr.write(bookdata)
             wr.flush()
             wr.close()
 
@@ -135,24 +125,6 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
         finish()
     }
-
-    private fun addData() {
-        /*for (book in  dbHandler.viewBooks()){
-            mutableList.add(BookModel(book.title, book.author,book.year,book.imageLink,book.isbn))
-        }*/
-        Log.v("LIST ", dbHandler.viewBooks().toString())
-        bookAdapter.updateData(dbHandler.viewBooks())
-    }
-
-    private fun initRecyclerView() {
-        books_recycler_view.apply {
-            books_recycler_view.layoutManager =
-                LinearLayoutManager(this@MainActivity)
-            bookAdapter = BooksAdapter(mutableList)
-            books_recycler_view.adapter = bookAdapter
-        }
-    }
-
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
