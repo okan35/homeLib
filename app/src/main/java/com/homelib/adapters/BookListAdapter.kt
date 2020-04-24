@@ -44,7 +44,7 @@ class BookListAdapter internal constructor(
 
     }
 
-    internal fun setWords(books: List<Book>) {
+    fun setBooks(books: List<Book>) {
         this.books = books
         notifyDataSetChanged()
     }

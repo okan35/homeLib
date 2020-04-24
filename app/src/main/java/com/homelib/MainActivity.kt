@@ -16,8 +16,8 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.homelib.adapters.BookListAdapter
+import com.homelib.databinding.ActivityMainBinding
 import com.homelib.viewmodels.BookViewModel
-import kotlinx.android.synthetic.main.activity_main.*
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.InputStreamReader
@@ -28,23 +28,26 @@ import java.net.URL
 
 class MainActivity : AppCompatActivity() {
     lateinit var bookViewModel: BookViewModel
+    private lateinit var binding: ActivityMainBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding =ActivityMainBinding.inflate(layoutInflater)
+
+        setContentView(binding.root)
         setSupportActionBar(findViewById(R.id.toolbar))
 
         val adapter = BookListAdapter(this)
 
-        books_recycler_view.adapter = adapter
-        books_recycler_view.layoutManager = LinearLayoutManager(this)
+        binding.booksRecyclerView.adapter = adapter
+        binding.booksRecyclerView.layoutManager = LinearLayoutManager(this)
         bookViewModel = ViewModelProvider(this).get(BookViewModel::class.java)
 
         bookViewModel.allUsers.observe(this, Observer { books ->
-            books?.let { adapter.setWords(it) }
+            books?.let { adapter.setBooks(it) }
         })
         validatePermission()
 
-        button_scan.setOnClickListener {
+        binding.buttonScan.setOnClickListener {
             performAction()
         }
     }

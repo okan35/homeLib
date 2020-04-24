@@ -3,14 +3,18 @@ package com.homelib
 import android.content.Intent
 import android.os.AsyncTask
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import android.util.Log
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.google.zxing.Result
+import com.homelib.adapters.BookListAdapter
 import com.homelib.data.Book
+import com.homelib.util.Status
 import com.homelib.viewmodels.BookViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +37,7 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
     var thumbnail = ""
     private lateinit var book2: Book
     private lateinit var bookViewModel: BookViewModel
+    private lateinit var adapter: BookListAdapter
 
     public override fun onCreate(state: Bundle?) {
         super.onCreate(state)
@@ -40,17 +45,22 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
 
         //setContentView(mScannerView)                // Set the scanner view as the content view
         val parent = RelativeLayout(this)
-        parent.layoutParams = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT)
+        parent.layoutParams = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
 
 
         val button = Button(this)
-        button.text="FLASH"
+        button.text = "FLASH"
 
 
-        val params = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,RelativeLayout.LayoutParams.WRAP_CONTENT)
-        params.addRule(RelativeLayout.BELOW,button.id)
-        mScannerView!!.layoutParams=params
+        val params = RelativeLayout.LayoutParams(
+            RelativeLayout.LayoutParams.WRAP_CONTENT,
+            RelativeLayout.LayoutParams.WRAP_CONTENT
+        )
+        params.addRule(RelativeLayout.BELOW, button.id)
+        mScannerView!!.layoutParams = params
         parent.addView(mScannerView)
 
         parent.addView(button)
@@ -77,7 +87,42 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
 
     override fun handleResult(p0: Result?) {
         Toast.makeText(this@ScanActivity, p0?.text, Toast.LENGTH_SHORT).show()
-        fetchJson(p0!!.text)
+        //fetchJson(p0!!.text)
+        getBookFromWeb(p0!!.text)
+    }
+
+    private fun getBookFromWeb(isbn: String) {
+             /*bookViewModel.getBook(isbn)..observe(this, Observer { books ->
+                 books?.let { adapter.setBooks(it) }
+             })*/
+
+        bookViewModel.getBook(isbn).observe(this, Observer {
+            it.let { resource ->
+                when (resource.status) {
+                    Status.SUCCESS -> {
+                        resource.data?.let { users -> retrieveList(listOf(users)) }
+                        onBackPressed()
+                    }
+                    Status.ERROR -> {
+                        Toast.makeText(this, it.message, Toast.LENGTH_LONG).show()
+                        Log.e("ERROR ", it.message)
+                        onBackPressed()
+                    }
+                    Status.LOADING -> {
+
+                    }
+                }
+
+            }
+        })
+    }
+
+    private fun retrieveList(books: List<Book>) {
+        adapter.apply {
+            bookViewModel.insert(books[0])
+            setBooks(books)
+            notifyDataSetChanged()
+        }
     }
 
     fun fetchJson(isbn: String) {
@@ -86,18 +131,32 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
                 if (!bookViewModel.isBookExisting(isbn.toLong())) {
                     AsyncTask.execute {
                         try {
-                            if (parseJson(isbn)){
-                                book2 = Book(title = title, author = author, year = publishedDate, imageLink = thumbnail, isbn = isbn)
+                            if (parseJson(isbn)) {
+                                book2 = Book(
+                                    title = title,
+                                    author = author,
+                                    year = publishedDate,
+                                    imageLink = thumbnail,
+                                    isbn = isbn
+                                )
                                 bookViewModel.insert(book2)
                                 val status2 = bookViewModel.isBookSaved
                                 runOnUiThread {
                                     if (status2 > -1) {
-                                        Toast.makeText(applicationContext, "record save", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(
+                                            applicationContext,
+                                            "record save",
+                                            Toast.LENGTH_LONG
+                                        ).show()
                                     }
                                 }
                             } else {
-                                runOnUiThread{
-                                    Toast.makeText(applicationContext, "Book was not found", Toast.LENGTH_LONG).show()
+                                runOnUiThread {
+                                    Toast.makeText(
+                                        applicationContext,
+                                        "Book was not found",
+                                        Toast.LENGTH_LONG
+                                    ).show()
 
                                 }
                             }
@@ -105,23 +164,28 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
                         } catch (e: Exception) {
                             e.printStackTrace()
                             runOnUiThread {
-                                Toast.makeText(applicationContext, "Json parsing error ", Toast.LENGTH_LONG).show()
+                                Toast.makeText(
+                                    applicationContext,
+                                    "Json parsing error ",
+                                    Toast.LENGTH_LONG
+                                ).show()
                                 onBackPressed()
                             }
                         }
                     }
                 } else {
-                    Toast.makeText(this@ScanActivity, "Book already saved", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@ScanActivity, "Book already saved", Toast.LENGTH_SHORT)
+                        .show()
                     onBackPressed()
                 }
-            } catch (e: Exception){
+            } catch (e: Exception) {
                 Toast.makeText(this@ScanActivity, e.message, Toast.LENGTH_SHORT).show()
                 onBackPressed()
             }
         }
     }
 
-    fun parseJson(isbn: String): Boolean{
+    fun parseJson(isbn: String): Boolean {
         var apiResponse = URL("https://www.googleapis.com/books/v1/volumes?q=isbn:$isbn").readText()
         var jsonObject = JSONObject(apiResponse)
         if (jsonObject.getInt("totalItems") > 0) {
@@ -132,7 +196,8 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
             publishedDate = volumeInfo.getString("publishedDate")
             thumbnail = volumeInfo.getJSONObject("imageLinks").getString("smallThumbnail")
             runOnUiThread {
-                Toast.makeText(applicationContext,"Source: google books",Toast.LENGTH_SHORT).show()
+                Toast.makeText(applicationContext, "Source: google books", Toast.LENGTH_SHORT)
+                    .show()
             }
             return true
         } else {
@@ -148,7 +213,8 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
                 publishedDate = detailsObject.getString("publish_date")
                 author = detailsObject.getJSONArray("authors").getJSONObject(0).getString("name")
                 runOnUiThread {
-                    Toast.makeText(applicationContext,"Source: open library",Toast.LENGTH_SHORT).show()
+                    Toast.makeText(applicationContext, "Source: open library", Toast.LENGTH_SHORT)
+                        .show()
                 }
                 return true
 
