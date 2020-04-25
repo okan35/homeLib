@@ -38,9 +38,9 @@ class BookListAdapter internal constructor(
         holder.authorTextView.text = current.author
         holder.titleTextView.text = current.title
         holder.yearTextView.text = current.year
-        /*if (current.imageLink.isNotEmpty()){
+        if (current.imageLink?.isNotEmpty()!!){
             Picasso.get().load(current.imageLink).into(holder.bookCoverView)
-        }*/
+        }
 
 
     }
