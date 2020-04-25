@@ -120,11 +120,12 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
     }
 
     private fun retrieveList(books: List<BookBase>) {
+        print("totalitems "+books[0].totalItems)
         title = books[0].items[0].volumeInfo.title
         author = books[0].items[0].volumeInfo.authors[0]
         publishedDate = books[0].items[0].volumeInfo.publishedDate
         thumbnail = books[0].items[0].volumeInfo.imageLinks.smallThumbnail
-        isbn = books[0].items[0].volumeInfo.industryIdentifiers[1].identifier
+        isbn = books[0].items[0].volumeInfo.industryIdentifiers[0].identifier
         book2 = Book(
             title = title,
             author = author,
