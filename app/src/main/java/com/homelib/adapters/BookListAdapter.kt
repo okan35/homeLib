@@ -34,12 +34,13 @@ class BookListAdapter internal constructor(
 
     override fun onBindViewHolder(holder: BookViewHolder, position: Int) {
         val current = books[position]
+        print("current $current")
         holder.authorTextView.text = current.author
         holder.titleTextView.text = current.title
         holder.yearTextView.text = current.year
-        if (!current.imageLink?.isEmpty()!!){
+        /*if (current.imageLink.isNotEmpty()){
             Picasso.get().load(current.imageLink).into(holder.bookCoverView)
-        }
+        }*/
 
 
     }

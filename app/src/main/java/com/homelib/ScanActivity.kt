@@ -1,5 +1,6 @@
 package com.homelib
 
+
 import android.content.Intent
 import android.os.AsyncTask
 import android.os.Bundle
@@ -13,6 +14,7 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.google.zxing.Result
 import com.homelib.adapters.BookListAdapter
+import com.homelib.book2.BookBase
 import com.homelib.data.Book
 import com.homelib.util.Status
 import com.homelib.viewmodels.BookViewModel
@@ -30,7 +32,7 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
 
     private var job: Job = Job()
     private var mScannerView: ZXingScannerView? = null
-    var barcode: Long = 0
+    var isbn = ""
     var title = ""
     var author = ""
     var publishedDate = ""
@@ -117,12 +119,20 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
         })
     }
 
-    private fun retrieveList(books: List<Book>) {
-        adapter.apply {
-            bookViewModel.insert(books[0])
-            setBooks(books)
-            notifyDataSetChanged()
-        }
+    private fun retrieveList(books: List<BookBase>) {
+        title = books[0].items[0].volumeInfo.title
+        author = books[0].items[0].volumeInfo.authors.toString()
+        publishedDate = books[0].items[0].volumeInfo.publishedDate
+        thumbnail = books[0].items[0].volumeInfo.imageLinks.smallThumbnail
+        isbn = books[0].items[0].volumeInfo.industryIdentifiers[1].identifier
+        book2 = Book(
+            title = title,
+            author = author,
+            year = publishedDate,
+            imageLink = thumbnail,
+            isbn = isbn
+        )
+        bookViewModel.insert(book2)
     }
 
     fun fetchJson(isbn: String) {
