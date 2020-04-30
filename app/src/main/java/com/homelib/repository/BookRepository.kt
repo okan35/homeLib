@@ -1,10 +1,10 @@
-package com.homelib.data
+package com.homelib.repository
 
 
 import androidx.lifecycle.LiveData
 import com.homelib.api.ApiHelper
-import com.homelib.api.ApiService
-import retrofit2.Retrofit
+import com.homelib.data.Book
+import com.homelib.data.BookDao
 
 
 // Declares the DAO as a private property in the constructor. Pass in the DAO
@@ -21,13 +21,15 @@ class BookRepository(private val bookDao: BookDao, private val apiHelper: ApiHel
          return bookDao.insert(book)
     }
 
-    fun getBookByIsbn(isbn: Long) : Book{
+    fun getBookByIsbn(isbn: Long) : Book {
        return bookDao.getBookByIsbn(isbn)
     }
 
     suspend fun isBookExisting(isbn: Long) = bookDao.isBookExisting(isbn)
 
-    suspend fun getBook(isbn: String) = apiHelper.getBooks(isbn)
+    suspend fun getBookFromGoogle(isbn: String) = apiHelper.getBooksFromGoogle(isbn)
+
+    suspend fun getBookFromOpenLibrary(isbn: String) = apiHelper.getBooksFromOpenLibrary(isbn)
 
 
 

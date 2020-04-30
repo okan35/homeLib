@@ -1,4 +1,4 @@
-package com.homelib.book2
+package com.homelib.bookTemplateGoogle
 import com.google.gson.annotations.SerializedName
 
 data class ImageLinks (

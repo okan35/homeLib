@@ -1,29 +1,28 @@
 package com.homelib.viewmodels
 
 import android.app.Application
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import com.homelib.api.ApiHelper
 import com.homelib.api.RetrofitBuilder
+import com.homelib.bookTemplateOpenLibrary.BookDetails
 import com.homelib.data.Book
 import com.homelib.data.BookDatabase
-import com.homelib.data.BookRepository
-import androidx.lifecycle.liveData
+import com.homelib.repository.BookRepository
 import com.homelib.util.Resource
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import org.jetbrains.annotations.NotNull
+
 
 class BookViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository: BookRepository
-    private val apiHelper: ApiHelper
+
+    private var repository: BookRepository
+    private var apiHelper: ApiHelper
     // Using LiveData and caching what getAlphabetizedWords returns has several benefits:
     // - We can put an observer on the data (instead of polling for changes) and only update the
     //   the UI when the data actually changes.
     // - Repository is completely separated from the UI through the ViewModel.
-    val allUsers: LiveData<List<Book>>
+
+    var allUsers: LiveData<List<Book>>;
     var isBookSaved : Long = 0
 
 
@@ -33,16 +32,49 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
             viewModelScope
         ).bookDao()
 
-        apiHelper = ApiHelper(RetrofitBuilder.apiService)
-        repository = BookRepository(usersDao,apiHelper)
+        apiHelper = ApiHelper(RetrofitBuilder.apiServiceGoogle)
+        repository = BookRepository(usersDao, apiHelper)
         allUsers = repository.allUsers
     }
 
-    fun getBook(isbn: String) = liveData(Dispatchers.IO) {
+    private fun initGoogleApi(){
+        val usersDao = BookDatabase.getDatabase(
+            getApplication(),
+            viewModelScope
+        ).bookDao()
+
+        apiHelper = ApiHelper(RetrofitBuilder.apiServiceGoogle)
+        repository = BookRepository(usersDao, apiHelper)
+        allUsers = repository.allUsers
+    }
+
+    private fun initOpenLibraryApi(){
+        val usersDao = BookDatabase.getDatabase(
+            getApplication(),
+            viewModelScope
+        ).bookDao()
+
+        apiHelper = ApiHelper(RetrofitBuilder.apiServiceOpenLibrary)
+        repository = BookRepository(usersDao, apiHelper)
+        allUsers = repository.allUsers
+    }
+
+    fun getBookFromGoogle(isbn: String) = liveData(Dispatchers.IO) {
+        initGoogleApi()
         emit(Resource.loading(data = null))
         try {
+            emit(Resource.success(data = repository.getBookFromGoogle(isbn)))
+        } catch (exception: Exception) {
+            exception.printStackTrace()
+            emit(Resource.error(data = null, message = exception.message ?: "Error Occurred!"))
+        }
+    }
 
-            emit(Resource.success(data = repository.getBook(isbn)))
+    fun getBookFromOpenLibrary(isbn: String) :LiveData<Resource<HashMap<String, BookDetails>>> = liveData(Dispatchers.IO) {
+        initOpenLibraryApi()
+        emit(Resource.loading(data = null))
+        try {
+            emit(Resource.success(data = repository.getBookFromOpenLibrary(isbn)))
         } catch (exception: Exception) {
             exception.printStackTrace()
             emit(Resource.error(data = null, message = exception.message ?: "Error Occurred!"))

@@ -2,6 +2,8 @@ package com.homelib.api
 
 class ApiHelper (private val apiService: ApiService) {
 
-    suspend fun getBooks(isbn: String) = apiService.getBooks(isbn)
+    suspend fun getBooksFromGoogle(isbn: String) = apiService.getBooksFromGoogleApi(isbn)
+
+    suspend fun getBooksFromOpenLibrary(isbn: String) = apiService.getBooksFromOpenLibraryApiMap(isbn)
 
 }

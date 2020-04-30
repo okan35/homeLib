@@ -13,8 +13,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.google.zxing.Result
-import com.homelib.adapters.BookListAdapter
-import com.homelib.book2.BookBase
+import com.homelib.bookTemplateGoogle.BookBase
+import com.homelib.bookTemplateOpenLibrary.BookDetails
 import com.homelib.data.Book
 import com.homelib.util.Status
 import com.homelib.viewmodels.BookViewModel
@@ -39,7 +39,6 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
     var thumbnail = ""
     private lateinit var book2: Book
     private lateinit var bookViewModel: BookViewModel
-    private lateinit var adapter: BookListAdapter
 
     public override fun onCreate(state: Bundle?) {
         super.onCreate(state)
@@ -89,16 +88,33 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
 
     override fun handleResult(p0: Result?) {
         Toast.makeText(this@ScanActivity, p0?.text, Toast.LENGTH_SHORT).show()
-        //fetchJson(p0!!.text)
-        getBookFromWeb(p0!!.text)
+       //getBookFromGoogle(p0!!.text)
+       getBookFromOpenLibrary("ISBN:"+p0!!.text)
     }
 
-    private fun getBookFromWeb(isbn: String) {
-             /*bookViewModel.getBook(isbn)..observe(this, Observer { books ->
-                 books?.let { adapter.setBooks(it) }
-             })*/
+    private fun getBookFromOpenLibrary(isbn: String) {
+        bookViewModel.getBookFromOpenLibrary(isbn).observe(this, Observer {
+            it.let { resource ->
+                when (resource.status) {
+                    Status.SUCCESS -> {
+                        resource.data?.let { users -> retrieveListOpenLibrary(users)}
+                        onBackPressed()
+                    }
+                    Status.ERROR -> {
+                        Toast.makeText(this, it.message, Toast.LENGTH_LONG).show()
+                        Log.e("ERROR ", it.message)
+                        onBackPressed()
+                    }
+                    Status.LOADING -> {
 
-        bookViewModel.getBook(isbn).observe(this, Observer {
+                    }
+                }
+            }
+        })
+    }
+
+    private fun getBookFromGoogle(isbn: String) {
+        bookViewModel.getBookFromGoogle(isbn).observe(this, Observer {
             it.let { resource ->
                 when (resource.status) {
                     Status.SUCCESS -> {
@@ -114,13 +130,11 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
 
                     }
                 }
-
             }
         })
     }
 
     private fun retrieveList(books: List<BookBase>) {
-        print("totalitems "+books[0].totalItems)
         title = books[0].items[0].volumeInfo.title
         author = books[0].items[0].volumeInfo.authors[0]
         publishedDate = books[0].items[0].volumeInfo.publishedDate
@@ -134,6 +148,25 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
             isbn = isbn
         )
         bookViewModel.insert(book2)
+    }
+
+    private fun retrieveListOpenLibrary(books: HashMap<String, BookDetails>) {
+        for ((key,value) in books){
+            title = if (value.details.title != null)   value.details.title else "no title"
+            author = if (value.details.authors != null)   value.details.authors[0].toString() else "no auth"
+            publishedDate = if (value.details.publish_date.toString() != null)   value.details.publish_date.toString() else "no date"
+            thumbnail = if (value.thumbnail_url != null)  value.thumbnail_url else ""
+            isbn =  if (value.details.isbn_13[0] != null)  value.details.isbn_13[0] else " no isbn"
+
+            book2 = Book(
+                title = title,
+                author = author,
+                year = publishedDate,
+                imageLink = thumbnail,
+                isbn = isbn
+            )
+            bookViewModel.insert(book2)
+        }
     }
 
     fun fetchJson(isbn: String) {
