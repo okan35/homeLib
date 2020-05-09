@@ -2,7 +2,6 @@ package com.homelib
 
 
 import android.content.Intent
-import android.os.AsyncTask
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -18,20 +17,18 @@ import com.homelib.bookTemplateOpenLibrary.BookDetails
 import com.homelib.data.Book
 import com.homelib.util.Status
 import com.homelib.viewmodels.BookViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 import me.dm7.barcodescanner.zxing.ZXingScannerView
-import org.json.JSONObject
-import java.net.URL
 import kotlin.coroutines.CoroutineContext
 
 
 class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, CoroutineScope {
-
+    private var TAG: String = "ScanActivity"
     private var job: Job = Job()
     private var mScannerView: ZXingScannerView? = null
+    private var bookBarcode: String = ""
     var isbn = ""
     var title = ""
     var author = ""
@@ -39,6 +36,7 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
     var thumbnail = ""
     private lateinit var book2: Book
     private lateinit var bookViewModel: BookViewModel
+    private var isBookSaved: Boolean = false
 
     public override fun onCreate(state: Bundle?) {
         super.onCreate(state)
@@ -88,21 +86,43 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
 
     override fun handleResult(p0: Result?) {
         Toast.makeText(this@ScanActivity, p0?.text, Toast.LENGTH_SHORT).show()
-       //getBookFromGoogle(p0!!.text)
-       getBookFromOpenLibrary("ISBN:"+p0!!.text)
+        bookBarcode = p0!!.text
+        CoroutineScope(IO).launch {
+            val result = async {
+                isBookSaved = bookViewModel.isBookExisting(bookBarcode)
+            }.await()
+
+            Log.d(TAG, " isSaved $isBookSaved")
+            CoroutineScope(Main).launch {
+                if (!isBookSaved) {
+                    getBookFromGoogle(bookBarcode)
+                } else {
+                    runOnUiThread {
+                        Toast.makeText(this@ScanActivity, "Book is already saved ", Toast.LENGTH_SHORT)
+                            .show()
+                        onBackPressed()
+                    }
+                }
+            }
+        }
+
     }
 
     private fun getBookFromOpenLibrary(isbn: String) {
+        runOnUiThread {
+            Toast.makeText(this, "Checking open library", Toast.LENGTH_LONG).show()
+        }
+
         bookViewModel.getBookFromOpenLibrary(isbn).observe(this, Observer {
             it.let { resource ->
                 when (resource.status) {
                     Status.SUCCESS -> {
-                        resource.data?.let { users -> retrieveListOpenLibrary(users)}
-                        onBackPressed()
+                        resource.data?.let { users -> retrieveListOpenLibrary(users) }
                     }
                     Status.ERROR -> {
-                        Toast.makeText(this, it.message, Toast.LENGTH_LONG).show()
-                        Log.e("ERROR ", it.message)
+                        runOnUiThread {
+                            Toast.makeText(this, it.message, Toast.LENGTH_LONG).show()
+                        }
                         onBackPressed()
                     }
                     Status.LOADING -> {
@@ -114,16 +134,20 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
     }
 
     private fun getBookFromGoogle(isbn: String) {
+        runOnUiThread {
+            Toast.makeText(this, "Checking google books", Toast.LENGTH_LONG).show()
+        }
+
         bookViewModel.getBookFromGoogle(isbn).observe(this, Observer {
             it.let { resource ->
                 when (resource.status) {
                     Status.SUCCESS -> {
-                        resource.data?.let { users -> retrieveList(listOf(users)) }
-                        onBackPressed()
+                        resource.data?.let { users -> retrieveListGoogleBooks(listOf(users)) }
                     }
                     Status.ERROR -> {
-                        Toast.makeText(this, it.message, Toast.LENGTH_LONG).show()
-                        Log.e("ERROR ", it.message)
+                        runOnUiThread {
+                            Toast.makeText(this, it.message, Toast.LENGTH_LONG).show()
+                        }
                         onBackPressed()
                     }
                     Status.LOADING -> {
@@ -134,30 +158,13 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
         })
     }
 
-    private fun retrieveList(books: List<BookBase>) {
-        title = books[0].items[0].volumeInfo.title
-        author = books[0].items[0].volumeInfo.authors[0]
-        publishedDate = books[0].items[0].volumeInfo.publishedDate
-        thumbnail = books[0].items[0].volumeInfo.imageLinks.smallThumbnail
-        isbn = books[0].items[0].volumeInfo.industryIdentifiers[0].identifier
-        book2 = Book(
-            title = title,
-            author = author,
-            year = publishedDate,
-            imageLink = thumbnail,
-            isbn = isbn
-        )
-        bookViewModel.insert(book2)
-    }
-
-    private fun retrieveListOpenLibrary(books: HashMap<String, BookDetails>) {
-        for ((key,value) in books){
-            title = if (value.details.title != null)   value.details.title else "no title"
-            author = if (value.details.authors != null)   value.details.authors[0].toString() else "no auth"
-            publishedDate = if (value.details.publish_date.toString() != null)   value.details.publish_date.toString() else "no date"
-            thumbnail = if (value.thumbnail_url != null)  value.thumbnail_url else ""
-            isbn =  if (value.details.isbn_13[0] != null)  value.details.isbn_13[0] else " no isbn"
-
+    private fun retrieveListGoogleBooks(books: List<BookBase>) {
+        if (books[0].totalItems != 0) {
+            title = books[0].items[0].volumeInfo.title
+            author = books[0].items[0].volumeInfo.authors[0]
+            publishedDate = books[0].items[0].volumeInfo.publishedDate
+            thumbnail = books[0].items[0].volumeInfo.imageLinks.smallThumbnail
+            isbn = bookBarcode
             book2 = Book(
                 title = title,
                 author = author,
@@ -166,105 +173,44 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
                 isbn = isbn
             )
             bookViewModel.insert(book2)
+
+            onBackPressed()
+        } else {
+            getBookFromOpenLibrary("ISBN:$bookBarcode")
         }
+
     }
 
-    fun fetchJson(isbn: String) {
-        launch {
-            try {
-                if (!bookViewModel.isBookExisting(isbn.toLong())) {
-                    AsyncTask.execute {
-                        try {
-                            if (parseJson(isbn)) {
-                                book2 = Book(
-                                    title = title,
-                                    author = author,
-                                    year = publishedDate,
-                                    imageLink = thumbnail,
-                                    isbn = isbn
-                                )
-                                bookViewModel.insert(book2)
-                                val status2 = bookViewModel.isBookSaved
-                                runOnUiThread {
-                                    if (status2 > -1) {
-                                        Toast.makeText(
-                                            applicationContext,
-                                            "record save",
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
-                                }
-                            } else {
-                                runOnUiThread {
-                                    Toast.makeText(
-                                        applicationContext,
-                                        "Book was not found",
-                                        Toast.LENGTH_LONG
-                                    ).show()
+    private fun retrieveListOpenLibrary(books: HashMap<String, BookDetails>) {
+        if (!books.toString().equals("{}")) {
+            for ((key, value) in books) {
 
-                                }
-                            }
-                            onBackPressed()//IF THIS IS NOT CALLED HERE THE ON CREATE ON MAIN ACTIVITYSOMEHOW DOES NOT FILL LIST.
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            runOnUiThread {
-                                Toast.makeText(
-                                    applicationContext,
-                                    "Json parsing error ",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                                onBackPressed()
-                            }
-                        }
-                    }
-                } else {
-                    Toast.makeText(this@ScanActivity, "Book already saved", Toast.LENGTH_SHORT)
-                        .show()
-                    onBackPressed()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@ScanActivity, e.message, Toast.LENGTH_SHORT).show()
+                title = if (value.details.title != null) value.details.title else "no title"
+                author =
+                    if (value.details.authors != null) value.details.authors[0].toString() else "no auth"
+                publishedDate =
+                    if (value.details.publish_date.toString() != null) value.details.publish_date.toString() else "no date"
+                thumbnail = if (value.thumbnail_url != null) value.thumbnail_url else ""
+                isbn = bookBarcode
+
+                book2 = Book(
+                    title = title,
+                    author = author,
+                    year = publishedDate,
+                    imageLink = thumbnail,
+                    isbn = isbn
+                )
+
+                bookViewModel.insert(book2)
+
                 onBackPressed()
             }
-        }
-    }
-
-    fun parseJson(isbn: String): Boolean {
-        var apiResponse = URL("https://www.googleapis.com/books/v1/volumes?q=isbn:$isbn").readText()
-        var jsonObject = JSONObject(apiResponse)
-        if (jsonObject.getInt("totalItems") > 0) {
-            val items: JSONObject = jsonObject.getJSONArray("items").getJSONObject(0)
-            val volumeInfo: JSONObject = items.getJSONObject("volumeInfo")
-            title = volumeInfo.getString("title")
-            author = volumeInfo.getJSONArray("authors").get(0).toString()
-            publishedDate = volumeInfo.getString("publishedDate")
-            thumbnail = volumeInfo.getJSONObject("imageLinks").getString("smallThumbnail")
-            runOnUiThread {
-                Toast.makeText(applicationContext, "Source: google books", Toast.LENGTH_SHORT)
-                    .show()
-            }
-            return true
         } else {
-            apiResponse =
-                URL("https://openlibrary.org/api/books?bibkeys=ISBN:$isbn&jscmd=details&format=json").readText()
-            jsonObject = JSONObject(apiResponse)
-            if (jsonObject.length() > 0) {
-
-                val detailsObject = jsonObject.getJSONObject("ISBN:$isbn").getJSONObject("details")
-                title = detailsObject.getString("title")
-                thumbnail = jsonObject.getJSONObject("ISBN:$isbn").getString("thumbnail_url")
-
-                publishedDate = detailsObject.getString("publish_date")
-                author = detailsObject.getJSONArray("authors").getJSONObject(0).getString("name")
-                runOnUiThread {
-                    Toast.makeText(applicationContext, "Source: open library", Toast.LENGTH_SHORT)
-                        .show()
-                }
-                return true
-
+            runOnUiThread {
+                Toast.makeText(this@ScanActivity, "Book was not found", Toast.LENGTH_SHORT).show()
             }
+            onBackPressed()
         }
-        return false
     }
 
     override fun onBackPressed() {
@@ -275,5 +221,6 @@ class ScanActivity : AppCompatActivity(), ZXingScannerView.ResultHandler, Corout
 
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.Main + job
+
 }
 

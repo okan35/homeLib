@@ -16,7 +16,7 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.homelib.adapters.BookListAdapter
-import com.homelib.databinding.ActivityMainBinding
+import com.homelib.databinding.ActivitiyMainV2Binding
 import com.homelib.viewmodels.BookViewModel
 import java.io.BufferedReader
 import java.io.BufferedWriter
@@ -28,10 +28,10 @@ import java.net.URL
 
 class MainActivity : AppCompatActivity() {
     lateinit var bookViewModel: BookViewModel
-    private lateinit var binding: ActivityMainBinding
+    private lateinit var binding: ActivitiyMainV2Binding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding =ActivityMainBinding.inflate(layoutInflater)
+        binding =ActivitiyMainV2Binding.inflate(layoutInflater)
 
         setContentView(binding.root)
         setSupportActionBar(findViewById(R.id.toolbar))
@@ -43,6 +43,7 @@ class MainActivity : AppCompatActivity() {
         bookViewModel = ViewModelProvider(this).get(BookViewModel::class.java)
 
         bookViewModel.allUsers.observe(this, Observer { books ->
+            Log.d("Main Activity ", books.toString())
             books?.let { adapter.setBooks(it) }
         })
         validatePermission()
@@ -50,6 +51,8 @@ class MainActivity : AppCompatActivity() {
         binding.buttonScan.setOnClickListener {
             performAction()
         }
+
+
     }
 
     override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {

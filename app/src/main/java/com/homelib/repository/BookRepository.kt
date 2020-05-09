@@ -25,7 +25,7 @@ class BookRepository(private val bookDao: BookDao, private val apiHelper: ApiHel
        return bookDao.getBookByIsbn(isbn)
     }
 
-    suspend fun isBookExisting(isbn: Long) = bookDao.isBookExisting(isbn)
+    suspend fun isBookExisting(isbn: String) = bookDao.isBookExisting(isbn)
 
     suspend fun getBookFromGoogle(isbn: String) = apiHelper.getBooksFromGoogle(isbn)
 

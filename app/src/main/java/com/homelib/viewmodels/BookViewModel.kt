@@ -1,7 +1,10 @@
 package com.homelib.viewmodels
 
 import android.app.Application
-import androidx.lifecycle.*
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.liveData
+import androidx.lifecycle.viewModelScope
 import com.homelib.api.ApiHelper
 import com.homelib.api.RetrofitBuilder
 import com.homelib.bookTemplateOpenLibrary.BookDetails
@@ -23,7 +26,7 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
     // - Repository is completely separated from the UI through the ViewModel.
 
     var allUsers: LiveData<List<Book>>;
-    var isBookSaved : Long = 0
+    var isBookSaved: Boolean = false
 
 
     init {
@@ -37,7 +40,7 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
         allUsers = repository.allUsers
     }
 
-    private fun initGoogleApi(){
+    private fun initGoogleApi() {
         val usersDao = BookDatabase.getDatabase(
             getApplication(),
             viewModelScope
@@ -48,7 +51,7 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
         allUsers = repository.allUsers
     }
 
-    private fun initOpenLibraryApi(){
+    private fun initOpenLibraryApi() {
         val usersDao = BookDatabase.getDatabase(
             getApplication(),
             viewModelScope
@@ -70,28 +73,31 @@ class BookViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun getBookFromOpenLibrary(isbn: String) :LiveData<Resource<HashMap<String, BookDetails>>> = liveData(Dispatchers.IO) {
-        initOpenLibraryApi()
-        emit(Resource.loading(data = null))
-        try {
-            emit(Resource.success(data = repository.getBookFromOpenLibrary(isbn)))
-        } catch (exception: Exception) {
-            exception.printStackTrace()
-            emit(Resource.error(data = null, message = exception.message ?: "Error Occurred!"))
+    fun getBookFromOpenLibrary(isbn: String): LiveData<Resource<HashMap<String, BookDetails>>> =
+        liveData(Dispatchers.IO) {
+            initOpenLibraryApi()
+            emit(Resource.loading(data = null))
+            try {
+                emit(Resource.success(data = repository.getBookFromOpenLibrary(isbn)))
+            } catch (exception: Exception) {
+                exception.printStackTrace()
+                emit(Resource.error(data = null, message = exception.message ?: "Error Occurred!"))
+            }
         }
-    }
 
     /**
      * Launching a new coroutine to insert the data in a non-blocking way
      */
-    fun insert(book: Book) = viewModelScope.launch(Dispatchers.IO) {
-       isBookSaved = repository.insert(book)
+    fun insert(book: Book): Boolean {
+        viewModelScope.launch(Dispatchers.IO) {
+            isBookSaved = repository.insert(book) == 1L
+        }
+        return isBookSaved
     }
 
     fun getBookByIsbn(isbn: Long) = repository.getBookByIsbn(isbn)
 
-    suspend fun isBookExisting(isbn: Long) = repository.isBookExisting(isbn)
-
+    suspend fun isBookExisting(isbn: String) = repository.isBookExisting(isbn)
 
 
 }

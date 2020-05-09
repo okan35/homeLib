@@ -28,7 +28,7 @@ class BookListAdapter internal constructor(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookViewHolder {
-        val itemView = inflater.inflate(R.layout.book_row, parent, false)
+        val itemView = inflater.inflate(R.layout.book_row_v2, parent, false)
         return BookViewHolder(itemView)
     }
 

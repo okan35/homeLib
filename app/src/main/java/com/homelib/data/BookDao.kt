@@ -18,7 +18,7 @@ interface BookDao {
     fun getBookByIsbn(isbn: Long) : Book
 
     @Query("SELECT EXISTS(SELECT 1 FROM books WHERE isbn = :isbn LIMIT 1)")
-    suspend fun isBookExisting(isbn: Long) : Boolean
+    suspend fun isBookExisting(isbn: String) : Boolean
 
     @Insert
     fun insertAll(vararg users: Book)
